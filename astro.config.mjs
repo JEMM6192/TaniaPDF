@@ -6,5 +6,5 @@ import vue from '@astrojs/vue';
 export default defineConfig({
     integrations: [vue()],
     site: 'https://jemm6192.github.io', 
-    base: '/TaniaPDF/',
+    base: 'TaniaPDF',
   });
