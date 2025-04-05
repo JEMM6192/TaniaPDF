@@ -5,6 +5,6 @@ import vue from '@astrojs/vue';
 // https://astro.build/config
 export default defineConfig({
     integrations: [vue()],
-    site: 'https://jemm6192.github.io/TaniaPDF/',
+    site: 'https://jemm6192.github.io', 
     base: '/TaniaPDF/',
   });
