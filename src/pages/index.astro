@@ -1,14 +1,23 @@
 ---
-import PdfViewer from "../components/PdfViewer.astro";
+import ClientPDFViewer from "../components/ClientPDFViewer.vue";
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Visor PDF con Marcas</title>
+    <title>Tania PDF Editor</title>
+    <link rel="stylesheet" href="/TaniaPDF/css/styles.css" />
+    <!-- Librerías externas -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"
+      defer></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      defer></script>
   </head>
   <body>
-    <PdfViewer />
+    <!-- Hidrata el componente Vue en el cliente -->
+    <ClientPDFViewer client:load />
   </body>
 </html>
