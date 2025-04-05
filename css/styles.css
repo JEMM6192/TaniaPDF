@@ -1,0 +1,108 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
+  
+  /* Contenedor principal: visualizador a la izquierda, controles a la derecha */
+  #mainContainer {
+    display: flex;
+    height: 100%;
+  }
+  
+  /* Visualizador: ocupa la mayor parte del ancho */
+  #viewerContainer {
+    flex: 1;
+    position: relative;
+    margin: 10px;
+    border: 1px solid #ccc;
+    overflow: auto;
+    background: #eee;
+    cursor: grab;
+  }
+  
+  #viewerContainer:active {
+    cursor: grabbing;
+  }
+  
+  /* Contenedor interno para posicionar los canvas */
+  #pdfContainer {
+    position: relative;
+  }
+  
+  /* Canvas para renderizar el PDF */
+  #pdfCanvas {
+    display: block;
+  }
+  
+  /* Canvas overlay para dibujar marcas */
+  #overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: auto;
+  }
+  
+  /* Panel de control a la derecha */
+  #controlPanel {
+    width: 250px;
+    padding: 10px;
+    border-left: 1px solid #ccc;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  
+  #controlPanel button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  /* Lista de marcas: cada entrada muestra un recuadro de color, etiqueta y botón de eliminar */
+  #marksList div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    border: 1px solid #ccc;
+    padding: 5px;
+    cursor: pointer;
+  }
+  
+  #marksList div.selected {
+    background-color: #d0e7ff;
+    border-color: #007bff;
+  }
+  
+  #marksList div > .colorBox {
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+  }
+  
+  #marksList div > .markLabel {
+    flex: 1;
+    font-size: 13px;
+  }
+  
+  #marksList div > .deleteBtn {
+    margin-left: 10px;
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+  
+  .deleteBtn {
+    margin-left: 10px;
+  }
+  
+
+  /* Contenedor para la lista de marcas con scroll */
+  #marksListContainer {
+    height: 390px; /* Aumenta la altura, por ejemplo a 400px */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 5px;
+    margin-top: 10px;
+  }
+  
