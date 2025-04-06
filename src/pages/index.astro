@@ -1,24 +1,15 @@
 ---
+// src/pages/index.astro
+import Layout from "../layouts/Layout.astro";
 import ClientPDFViewer from "../components/ClientPDFViewer.vue";
 import "../styles/global.css";
 ---
 
-<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Tania PDF Editor</title>
-    <link rel="stylesheet" href="/TaniaPDF/css/styles.css" />
-    <!-- Librerías externas -->
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"
-      defer></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-      defer></script>
-  </head>
-  <body>
-    <!-- Hidrata el componente Vue en el cliente -->
-    <ClientPDFViewer client:load />
-  </body>
-</html>
+<Layout>
+  <!-- Contenedor para el visor: le damos un ancho fijo pero que se mantenga centrado -->
+  <div class="flex justify-center">
+    <div class="flex-shrink-0">
+      <ClientPDFViewer client:load />
+    </div>
+  </div>
+</Layout>

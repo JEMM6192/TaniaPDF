@@ -1,13 +1,20 @@
 ---
-import PDFCanvas from "../components/PDFCanvas.astro";
-import ControlPanel from "../components/ControlPanel.astro";
+// src/components/PDFViewer.astro
+import "../scripts/pdf-viewer.ts"; // Asegúrate de que tu script se ejecute, este script se encargará de inicializar el custom element.
+const customEl = "pdf-viewer-element";
 ---
 
-<pdf-viewer-element base-url="/TaniaPDF">
-  <div id="mainContainer">
-    <div id="viewerContainer">
-      <PDFCanvas />
+<component :is="customEl" base-url="/TaniaPDF">
+  <!-- Contenedor principal para el visor PDF -->
+  <div
+    id="viewerContainer"
+    class="flex-1 p-2 border border-base-200 rounded-lg bg-base-100 overflow-auto cursor-grab"
+  >
+    <div class="relative">
+      <canvas id="pdfCanvas" class="block"></canvas>
+      <canvas
+        id="overlayCanvas"
+        class="absolute top-0 left-0 pointer-events-auto"></canvas>
     </div>
-    <ControlPanel />
   </div>
-</pdf-viewer-element>
+</component>

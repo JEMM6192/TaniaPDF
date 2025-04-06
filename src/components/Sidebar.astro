@@ -1,0 +1,43 @@
+<!-- src/components/Sidebar.astro -->
+<aside
+  id="with-navbar-sidebar"
+  class="hidden sm:flex sm:flex-col sm:w-48 sm:pt-16 bg-base-100 border-r border-base-200"
+  role="dialog"
+  tabindex="-1"
+>
+  <div class="p-4">
+    <h3 class="text-lg font-semibold mb-4">Vista Previa</h3>
+    <!-- Mini visualización del PDF (canvas reducido) -->
+    <div class="border border-base-200 rounded-lg overflow-hidden mb-6">
+      <canvas id="miniPdfCanvas" class="w-full h-auto"></canvas>
+    </div>
+    <!-- Menú de navegación -->
+    <ul class="menu p-0">
+      <li>
+        <a href="#">
+          <span class="icon-[tabler--home] size-5"></span>
+          Home
+        </a>
+      </li>
+      <li>
+        <a href="#">
+          <span class="icon-[tabler--user] size-5"></span>
+          Account
+        </a>
+      </li>
+      <li>
+        <a href="#">
+          <span class="icon-[tabler--message] size-5"></span>
+          Notifications
+        </a>
+      </li>
+      <li>
+        <a href="#">
+          <span class="icon-[tabler--mail] size-5"></span>
+          Email
+        </a>
+      </li>
+      <!-- Agrega más ítems según necesites -->
+    </ul>
+  </div>
+</aside>

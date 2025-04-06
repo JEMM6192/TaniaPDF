@@ -1,12 +1,161 @@
-<div id="controlPanel">
-  <button id="btnAbrir">Abrir PDF</button>
-  <button id="btnZoomIn">Acercar</button>
-  <button id="btnZoomOut">Alejar</button>
-  <button id="btnAgregarMarca">Agregar Marca</button>
-  <button id="btnImprimir">Imprimir</button>
-  <button id="btnGuardar">Guardar</button>
-  <div id="marksListContainer">
-    <!-- Podrías importar MarksList.astro aquí si lo separas -->
-    <div id="marksList"></div>
+<!-- src/components/ControlPanel.astro -->
+<div
+  id="controlPanel"
+  class="w-64 p-4 border-l border-base-200 box-border overflow-y-auto"
+>
+  <button
+    id="btnAbrir"
+    class="btn btn-primary w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span class="icon-[ix--open-file-filled]" style="width: 24px; height: 24px;"
+    ></span>
+    <span>Abrir PDF</span>
+  </button>
+  <button
+    id="btnZoomIn"
+    class="btn btn-secondary w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span
+      class="icon-[tdesign--zoom-in-filled]"
+      style="width: 24px; height: 24px;"></span>
+    <span>Acercar</span>
+  </button>
+  <button
+    id="btnZoomOut"
+    class="btn btn-secondary w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span
+      class="icon-[tdesign--zoom-out-filled]"
+      style="width: 24px; height: 24px;"></span>
+    <span>Alejar</span>
+  </button>
+  <button
+    id="btnAgregarMarca"
+    class="btn btn-info w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span class="icon-[subway--mark-3]" style="width: 24px; height: 24px;"
+    ></span>
+    <span>Agregar Marca</span>
+  </button>
+  <button
+    id="btnImprimir"
+    class="btn btn-warning w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span
+      class="icon-[tdesign--print-filled]"
+      style="width: 24px; height: 24px;"></span>
+    <span>Imprimir</span>
+  </button>
+  <button
+    id="btnGuardar"
+    class="btn btn-success w-full mb-2 flex items-center space-x-2 justify-start"
+  >
+    <span
+      class="icon-[material-symbols--file-save-rounded]"
+      style="width: 24px; height: 24px;"></span>
+    <span>Guardar</span>
+  </button>
+  <div
+    id="marksListContainer"
+    class="h-96 overflow-y-auto border border-base-200 p-2 mt-2 rounded"
+  >
+    <div id="marksList" class="space-y-2">
+      <!-- Aquí se generarán los elementos de marca -->
+    </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Obtén la referencia al custom element (debe tener el id "pdfViewerElement")
+    var pdfViewer = document.getElementById("pdfViewerElement");
+    if (!pdfViewer) {
+      console.error("No se encontró el elemento del visor PDF.");
+      return;
+    }
+
+    var btnAbrir = document.getElementById("btnAbrir");
+    var btnZoomIn = document.getElementById("btnZoomIn");
+    var btnZoomOut = document.getElementById("btnZoomOut");
+    var btnAgregarMarca = document.getElementById("btnAgregarMarca");
+    var btnImprimir = document.getElementById("btnImprimir");
+    var btnGuardar = document.getElementById("btnGuardar");
+
+    btnAbrir &&
+      btnAbrir.addEventListener("click", function () {
+        (pdfViewer as any).openPDF();
+      });
+    btnZoomIn &&
+      btnZoomIn.addEventListener("click", function () {
+        (pdfViewer as any).zoomIn();
+      });
+    btnZoomOut &&
+      btnZoomOut.addEventListener("click", function () {
+        (pdfViewer as any).zoomOut();
+      });
+    btnAgregarMarca &&
+      btnAgregarMarca.addEventListener("click", function () {
+        (pdfViewer as any).agregarMarca();
+      });
+    btnImprimir &&
+      btnImprimir.addEventListener("click", function () {
+        (pdfViewer as any).imprimirMarcas();
+      });
+    btnGuardar &&
+      btnGuardar.addEventListener("click", function () {
+        (pdfViewer as any).guardarMarcas();
+      });
+
+    // Escucha el evento "marks-updated" disparado por el custom element para actualizar la lista de marcas
+    pdfViewer.addEventListener("marks-updated", function (event) {
+      var marcas = (event as CustomEvent).detail;
+      var marksList = document.getElementById("marksList");
+      if (!marksList) return;
+      // Limpia la lista existente
+      marksList.innerHTML = "";
+      marcas.forEach(function (marca: { color: string }, idx: number) {
+        var container = document.createElement("div");
+        container.dataset.index = idx.toString();
+        container.style.display = "flex";
+        container.style.alignItems = "center";
+        container.style.marginBottom = "5px";
+        container.style.border = "1px solid #ccc";
+        container.style.padding = "5px";
+        container.style.cursor = "pointer";
+
+        var colorBox = document.createElement("div");
+        colorBox.style.width = "16px";
+        colorBox.style.height = "16px";
+        colorBox.style.marginRight = "10px";
+        colorBox.style.backgroundColor = marca.color;
+
+        var label = document.createElement("span");
+        label.textContent = "Marca " + (idx + 1);
+        label.style.flex = "1";
+        label.style.fontSize = "13px";
+
+        var deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "X";
+        deleteBtn.style.fontSize = "12px";
+        deleteBtn.style.padding = "3px 6px";
+        deleteBtn.style.marginLeft = "10px";
+        deleteBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          // Dispara un evento para eliminar la marca, que el visor debe manejar
+          if (pdfViewer) {
+            pdfViewer.dispatchEvent(
+              new CustomEvent("delete-mark", { detail: idx })
+            );
+          }
+        });
+
+        container.appendChild(colorBox);
+        container.appendChild(label);
+        container.appendChild(deleteBtn);
+        if (marksList) {
+          marksList.appendChild(container);
+        }
+      });
+    });
+  });
+</script>

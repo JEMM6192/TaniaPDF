@@ -1,6 +1,6 @@
 // src/scripts/pdf-viewer.ts
 
-// Primero, declara que pdfjsLib y jspdf existen en el ámbito global
+// Declara que pdfjsLib y jspdf existen en el ámbito global
 declare const pdfjsLib: any;
 declare const jspdf: any;
 
@@ -16,7 +16,8 @@ if (typeof window !== 'undefined') {
   class PDFViewerElement extends HTMLElement {
     pdfDoc: any = null;
     currentPage: number = 1;
-    scale: number = 1.0;
+    // Zoom inicial; cámbialo según necesites
+    scale: number = 0.5;
     marcas: Marca[] = [];
     isMarcando: boolean = false;
     currentMarca: { startX: number; startY: number } | null = null;
@@ -32,6 +33,32 @@ if (typeof window !== 'undefined') {
     ctxPdf!: CanvasRenderingContext2D;
     ctxOverlay!: CanvasRenderingContext2D;
 
+    // Handlers globales para eventos
+    private _openPdfHandler = () => {
+      console.log("Evento open-pdf recibido en el visor");
+      this.openPDF();
+    };
+    private _zoomInHandler = () => {
+      console.log("Evento zoom-in recibido en el visor");
+      this.zoomIn();
+    };
+    private _zoomOutHandler = () => {
+      console.log("Evento zoom-out recibido en el visor");
+      this.zoomOut();
+    };
+    private _addMarkHandler = () => {
+      console.log("Evento add-mark recibido en el visor");
+      this.agregarMarca();
+    };
+    private _printMarksHandler = () => {
+      console.log("Evento print-marks recibido en el visor");
+      this.imprimirMarcas();
+    };
+    private _saveMarksHandler = () => {
+      console.log("Evento save-marks recibido en el visor");
+      this.guardarMarcas();
+    };
+
     connectedCallback(): void {
       this.baseUrl = this.getAttribute('base-url') || '/';
 
@@ -39,9 +66,9 @@ if (typeof window !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
 
-        console.log('Contenido interno del custom element:', this.innerHTML);
+      console.log('Contenido interno del custom element:', this.innerHTML);
 
-      // Asocia los elementos internos; se espera que el contenido del custom element incluya estos IDs.
+      // Busca los elementos internos (deben estar definidos en el contenido inyectado)
       const viewerContainer = this.querySelector('#viewerContainer');
       const pdfCanvas = this.querySelector('#pdfCanvas');
       const overlayCanvas = this.querySelector('#overlayCanvas');
@@ -57,49 +84,40 @@ if (typeof window !== 'undefined') {
       this.ctxPdf = this.pdfCanvas.getContext('2d') as CanvasRenderingContext2D;
       this.ctxOverlay = this.overlayCanvas.getContext('2d') as CanvasRenderingContext2D;
 
-      this.initializeEvents();
-    }
-
-    initializeEvents(): void {
-      const btnAbrir = this.querySelector('#btnAbrir');
-      btnAbrir?.addEventListener('click', () => this.openPDF());
-
-      const btnZoomIn = this.querySelector('#btnZoomIn');
-      btnZoomIn?.addEventListener('click', () => {
-        this.scale *= 1.1;
-        this.renderPage(this.currentPage);
-      });
-
-      const btnZoomOut = this.querySelector('#btnZoomOut');
-      btnZoomOut?.addEventListener('click', () => {
-        this.scale /= 1.1;
-        this.renderPage(this.currentPage);
-      });
-
-      const btnAgregarMarca = this.querySelector('#btnAgregarMarca');
-      btnAgregarMarca?.addEventListener('click', () => {
-        this.isMarcando = true;
-        this.overlayCanvas.style.cursor = 'crosshair';
-      });
-
-      const btnImprimir = this.querySelector('#btnImprimir');
-      btnImprimir?.addEventListener('click', () => this.imprimirMarcas());
-
-      const btnGuardar = this.querySelector('#btnGuardar');
-      btnGuardar?.addEventListener('click', () => this.guardarMarcas());
-
-      // Eventos para el canvas (marcas)
+      // Registra eventos para panning y marcas
       this.overlayCanvas.addEventListener('mousedown', (e) => this.startMarking(e));
       this.overlayCanvas.addEventListener('mousemove', (e) => this.updateMarking(e));
       this.overlayCanvas.addEventListener('mouseup', (e) => this.finishMarking(e));
 
-      // Eventos para panning
       this.viewerContainer.addEventListener('mousedown', (e) => this.startPanning(e));
       window.addEventListener('mousemove', (e) => this.doPanning(e));
       window.addEventListener('mouseup', (e) => this.stopPanning(e));
+
+     
+      // Registra eventos globales
+      window.addEventListener('open-pdf', this._openPdfHandler);
+      window.addEventListener('zoom-in', this._zoomInHandler);
+      window.addEventListener('zoom-out', this._zoomOutHandler);
+      window.addEventListener('add-mark', this._addMarkHandler);
+      window.addEventListener('print-marks', this._printMarksHandler);
+      window.addEventListener('save-marks', this._saveMarksHandler);
+
+      // Agrega listener para eliminar marca (evento "delete-mark")
+      this.addEventListener("delete-mark", (event: Event) => {
+        // Se asume que event es un CustomEvent con la propiedad detail en forma de número (índice)
+        const idx = (event as CustomEvent).detail;
+        if (typeof idx === "number") {
+          this.marcas.splice(idx, 1);
+          this.updateMarksList();
+          this.dibujarMarcasFijas();
+        }
+      });
     }
 
-    openPDF(): void {
+    // Métodos públicos
+
+    public openPDF(): void {
+      console.log("Ejecutando openPDF...");
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'application/pdf';
@@ -112,7 +130,7 @@ if (typeof window !== 'undefined') {
             pdfjsLib.getDocument(typedarray).promise.then((pdf: any) => {
               this.pdfDoc = pdf;
               this.currentPage = 1;
-              this.scale = 1.0;
+              this.scale = 1.0; // Zoom se resetea
               this.marcas = [];
               this.selectedMarkIndex = null;
               this.renderPage(this.currentPage);
@@ -126,6 +144,94 @@ if (typeof window !== 'undefined') {
       };
       input.click();
     }
+
+    public zoomIn(): void {
+      this.scale *= 1.1;
+      console.log("Nuevo scale (zoom in):", this.scale);
+      this.renderPage(this.currentPage);
+    }
+
+    public zoomOut(): void {
+      this.scale /= 1.1;
+      console.log("Nuevo scale (zoom out):", this.scale);
+      this.renderPage(this.currentPage);
+    }
+
+    public agregarMarca(): void {
+      console.log("Activando modo agregar marca...");
+      this.isMarcando = true;
+      this.overlayCanvas.style.cursor = 'crosshair';
+    }
+
+    public imprimirMarcas(): void {
+      if (this.marcas.length === 0) {
+        alert("No hay marcas para imprimir.");
+        return;
+      }
+      const { jsPDF } = jspdf;
+      let pdf: any = null;
+      let processed = 0;
+      const processMark = (i: number) => {
+        this.exportMarca(this.marcas[i], (imgData, cropW, cropH) => {
+          const orientation = cropW > cropH ? "landscape" : "portrait";
+          if (i === 0) {
+            pdf = new jsPDF({
+              orientation: orientation,
+              unit: "px",
+              format: [cropW, cropH],
+            });
+            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
+          } else {
+            pdf.addPage([cropW, cropH], orientation);
+            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
+          }
+          processed++;
+          if (processed === this.marcas.length) {
+            const pdfBlob = pdf.output("blob");
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            window.open(blobUrl, "_blank");
+          } else {
+            processMark(i + 1);
+          }
+        });
+      };
+      processMark(0);
+    }
+
+    public guardarMarcas(): void {
+      if (this.marcas.length === 0) {
+        alert("No hay marcas para guardar.");
+        return;
+      }
+      const { jsPDF } = jspdf;
+      let pdf: any = null;
+      let processed = 0;
+      const processMark = (i: number) => {
+        this.exportMarca(this.marcas[i], (imgData, cropW, cropH) => {
+          const orientation = cropW > cropH ? "landscape" : "portrait";
+          if (i === 0) {
+            pdf = new jsPDF({
+              orientation: orientation,
+              unit: "px",
+              format: [cropW, cropH],
+            });
+            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
+          } else {
+            pdf.addPage([cropW, cropH], orientation);
+            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
+          }
+          processed++;
+          if (processed === this.marcas.length) {
+            pdf.save("marcas.pdf");
+          } else {
+            processMark(i + 1);
+          }
+        });
+      };
+      processMark(0);
+    }
+
+    // Métodos internos
 
     renderPage(num: number): void {
       this.pdfDoc.getPage(num).then((page: any) => {
@@ -165,51 +271,12 @@ if (typeof window !== 'undefined') {
     }
 
     updateMarksList(): void {
-      const listDiv = this.querySelector('#marksList');
-      if (!listDiv) return;
-      listDiv.innerHTML = '';
-      this.marcas.forEach((marca: Marca, idx: number) => {
-        const container = document.createElement('div');
-        container.dataset.index = idx.toString();
-
-        const colorBox = document.createElement('div');
-        colorBox.className = 'colorBox';
-        colorBox.style.backgroundColor = marca.color;
-
-        const label = document.createElement('span');
-        label.className = 'markLabel';
-        label.textContent = 'Marca ' + (idx + 1);
-        label.addEventListener('click', () => {
-          this.selectedMarkIndex = idx;
-          listDiv.querySelectorAll('div').forEach(el => el.classList.remove('selected'));
-          container.classList.add('selected');
-        });
-
-        const deleteBtn = document.createElement('img');
-        deleteBtn.className = 'deleteBtn';
-        deleteBtn.src = this.baseUrl + '/icons/delete.svg';
-        deleteBtn.style.width = '24px';
-        deleteBtn.style.height = '24px';
-        deleteBtn.style.cursor = 'pointer';
-        deleteBtn.addEventListener('click', (e: Event) => {
-          e.stopPropagation();
-          const index = parseInt(container.dataset.index || '0', 10);
-          this.marcas.splice(index, 1);
-          if (this.selectedMarkIndex === index) {
-            this.selectedMarkIndex = null;
-          }
-          this.updateMarksList();
-          this.dibujarMarcasFijas();
-        });
-
-        container.appendChild(colorBox);
-        container.appendChild(label);
-        container.appendChild(deleteBtn);
-        listDiv.appendChild(container);
-      });
+      this.dispatchEvent(new CustomEvent("marks-updated", { detail: this.marcas }));
     }
+    
+    
 
-    // Funciones para marcas
+    // Funciones para manejo de marcas
     startMarking(e: MouseEvent): void {
       if (this.isMarcando) {
         const rect = this.overlayCanvas.getBoundingClientRect();
@@ -286,9 +353,8 @@ if (typeof window !== 'undefined') {
       }
     }
 
-    // Función para exportar una marca
     exportMarca(mark: Marca, callback: (imgData: string, cropW: number, cropH: number) => void): void {
-      const exportScale = 3.0;
+      const exportScale = 2.0; // Ajusta este valor según necesites
       this.pdfDoc.getPage(this.currentPage).then((page: any) => {
         const viewportHigh = page.getViewport({ scale: exportScale });
         const highCanvas = document.createElement('canvas');
@@ -306,77 +372,19 @@ if (typeof window !== 'undefined') {
           cropCanvas.height = cropH;
           const cropCtx = cropCanvas.getContext('2d');
           cropCtx?.drawImage(highCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-          callback(cropCanvas.toDataURL("image/png"), cropW, cropH);
+          // Espera 300ms y usa requestAnimationFrame para asegurarte que el canvas se renderice
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              try {
+                const dataUrl = cropCanvas.toDataURL("image/png");
+                callback(dataUrl, cropW, cropH);
+              } catch (error) {
+                console.error("Error al generar PNG:", error);
+              }
+            });
+          }, 300);
         });
       });
-    }
-
-    imprimirMarcas(): void {
-      if (this.marcas.length === 0) {
-        alert("No hay marcas para imprimir.");
-        return;
-      }
-      const { jsPDF } = jspdf;
-      let pdf: any = null;
-      let processed = 0;
-      const processMark = (i: number) => {
-        this.exportMarca(this.marcas[i], (imgData, cropW, cropH) => {
-          const orientation = cropW > cropH ? "landscape" : "portrait";
-          if (i === 0) {
-            pdf = new jsPDF({
-              orientation: orientation,
-              unit: "px",
-              format: [cropW, cropH],
-            });
-            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
-          } else {
-            pdf.addPage([cropW, cropH], orientation);
-            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
-          }
-          processed++;
-          if (processed === this.marcas.length) {
-            const pdfBlob = pdf.output("blob");
-            const blobUrl = URL.createObjectURL(pdfBlob);
-            window.open(blobUrl, "_blank");
-          } else {
-            processMark(i + 1);
-          }
-        });
-      };
-      processMark(0);
-    }
-
-    guardarMarcas(): void {
-      if (this.marcas.length === 0) {
-        alert("No hay marcas para guardar.");
-        return;
-      }
-      const { jsPDF } = jspdf;
-      let pdf: any = null;
-      let processed = 0;
-      const processMark = (i: number) => {
-        this.exportMarca(this.marcas[i], (imgData, cropW, cropH) => {
-          const orientation = cropW > cropH ? "landscape" : "portrait";
-          if (i === 0) {
-            pdf = new jsPDF({
-              orientation: orientation,
-              unit: "px",
-              format: [cropW, cropH],
-            });
-            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
-          } else {
-            pdf.addPage([cropW, cropH], orientation);
-            pdf.addImage(imgData, "PNG", 0, 0, cropW, cropH);
-          }
-          processed++;
-          if (processed === this.marcas.length) {
-            pdf.save("marcas.pdf");
-          } else {
-            processMark(i + 1);
-          }
-        });
-      };
-      processMark(0);
     }
   }
 
