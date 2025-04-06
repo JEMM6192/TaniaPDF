@@ -39,6 +39,8 @@ if (typeof window !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js';
 
+        console.log('Contenido interno del custom element:', this.innerHTML);
+
       // Asocia los elementos internos; se espera que el contenido del custom element incluya estos IDs.
       const viewerContainer = this.querySelector('#viewerContainer');
       const pdfCanvas = this.querySelector('#pdfCanvas');
