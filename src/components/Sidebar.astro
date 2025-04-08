@@ -1,43 +1,86 @@
 <!-- src/components/Sidebar.astro -->
-<aside
-  id="with-navbar-sidebar"
-  class="hidden sm:flex sm:flex-col sm:w-48 sm:pt-16 bg-base-100 border-r border-base-200"
-  role="dialog"
-  tabindex="-1"
->
+<aside id="with-navbar-sidebar" role="dialog" tabindex="-1">
   <div class="p-4">
-    <h3 class="text-lg font-semibold mb-4">Vista Previa</h3>
-    <!-- Mini visualización del PDF (canvas reducido) -->
-    <div class="border border-base-200 rounded-lg overflow-hidden mb-6">
-      <canvas id="miniPdfCanvas" class="w-full h-auto"></canvas>
+    <h3 class="text-lg font-semibold mb-4"></h3>
+    <div class="max-h-[600px] overflow-y-auto mb-4">
+      <ul id="pdfList" class="menu p-0 space-y-2"></ul>
     </div>
-    <!-- Menú de navegación -->
-    <ul class="menu p-0">
-      <li>
-        <a href="#">
-          <span class="icon-[tabler--home] size-5"></span>
-          Home
-        </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon-[tabler--user] size-5"></span>
-          Account
-        </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon-[tabler--message] size-5"></span>
-          Notifications
-        </a>
-      </li>
-      <li>
-        <a href="#">
-          <span class="icon-[tabler--mail] size-5"></span>
-          Email
-        </a>
-      </li>
-      <!-- Agrega más ítems según necesites -->
-    </ul>
   </div>
 </aside>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const pdfViewer = document.getElementById("pdfViewerElement");
+    if (!pdfViewer) {
+      console.error("No se encontró el elemento pdfViewerElement");
+      return;
+    }
+    const pdfList = document.getElementById("pdfList");
+    if (!pdfList) return;
+
+    // Define interface for the PDF object
+    interface PDFData {
+      thumbnail?: string;
+      name: string;
+    }
+
+    interface CustomPDFEvent extends CustomEvent {
+      detail: PDFData[];
+    }
+
+    pdfViewer.addEventListener("pdfs-updated", function (event) {
+      const customEvent = event as CustomPDFEvent;
+      const pdfs = customEvent.detail || [];
+      pdfList.innerHTML = "";
+
+      pdfs.forEach(function (pdf: PDFData, idx: number) {
+        const li = document.createElement("li");
+        li.dataset.index = String(idx);
+        li.className = "relative flex flex-col items-center cursor-pointer";
+
+        // Contenedor de imagen + nombre (ambos seleccionables)
+        const previewContainer = document.createElement("div");
+        previewContainer.className = "flex flex-col items-center";
+
+        if (pdf.thumbnail) {
+          const img = document.createElement("img");
+          img.src = pdf.thumbnail;
+          img.alt = pdf.name;
+          img.className = "w-[100px] h-[130px] object-cover rounded";
+          previewContainer.appendChild(img);
+        }
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = pdf.name;
+        nameSpan.className = "text-sm text-center mt-1";
+        previewContainer.appendChild(nameSpan);
+
+        // Hacer clic en el contenedor selecciona el PDF
+        previewContainer.addEventListener("click", function () {
+          pdfViewer.dispatchEvent(
+            new CustomEvent("select-pdf", { detail: idx })
+          );
+        });
+
+        li.appendChild(previewContainer);
+
+        // Botón de borrar (una X en rojo en la esquina)
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerHTML = "&times;"; // caracter X bonito
+        deleteBtn.className =
+          "absolute top-0 right-0 text-red-600 text-xl px-1 hover:text-red-800";
+        deleteBtn.title = "Eliminar";
+
+        deleteBtn.addEventListener("click", function (e: Event) {
+          e.stopPropagation(); // evita que dispare selección
+          pdfViewer.dispatchEvent(
+            new CustomEvent("delete-pdf", { detail: idx })
+          );
+        });
+
+        li.appendChild(deleteBtn);
+        pdfList.appendChild(li);
+      });
+    });
+  });
+</script>

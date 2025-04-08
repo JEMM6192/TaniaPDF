@@ -19,6 +19,7 @@ if (typeof window !== 'undefined') {
     // Zoom inicial; cámbialo según necesites
     scale: number = 0.5;
     marcas: Marca[] = [];
+    loadedPDFs: { name: string; pdfDoc: any; thumbnail?: string; marks: Marca[] }[] = [];
     isMarcando: boolean = false;
     currentMarca: { startX: number; startY: number } | null = null;
     selectedMarkIndex: number | null = null;
@@ -61,6 +62,46 @@ if (typeof window !== 'undefined') {
 
     connectedCallback(): void {
       this.baseUrl = this.getAttribute('base-url') || '/';
+
+          // Al final de connectedCallback()
+          this.addEventListener("select-pdf", (event: Event) => {
+            var idx = (event as CustomEvent).detail;
+            if (typeof idx === "number") {
+              this.showPDF(idx);
+            }
+          });
+          
+          // Dentro de connectedCallback(), agrega esto:
+this.addEventListener("delete-pdf", (event: Event) => {
+  var idx = (event as CustomEvent).detail;
+  if (typeof idx === "number") {
+    // Elimina el PDF (y sus marcas) de la lista de PDFs cargados
+    this.loadedPDFs.splice(idx, 1);
+    // Actualiza la lista de PDFs disparando el evento "pdfs-updated"
+    this.dispatchEvent(new CustomEvent("pdfs-updated", { detail: this.loadedPDFs }));
+    // Si el PDF eliminado es el actual, actualiza el visor
+    if (this.pdfDoc && this.loadedPDFs.length > 0) {
+      // Si se eliminó el primer PDF, o si hay otros, elige el índice adecuado.
+      var newIndex = idx === 0 ? 0 : idx - 1;
+      var selected = this.loadedPDFs[newIndex];
+      this.pdfDoc = selected.pdfDoc;
+      this.currentPage = 1;
+      this.scale = 1.0;
+      this.marcas = selected.marks || [];
+      this.renderPage(this.currentPage);
+      this.dispatchEvent(new CustomEvent("marks-updated", { detail: this.marcas }));
+    } else if (this.loadedPDFs.length === 0) {
+      // Si ya no hay PDFs, limpia el visor y las marcas
+      this.pdfDoc = null;
+      this.marcas = [];
+      this.ctxPdf.clearRect(0, 0, this.pdfCanvas.width, this.pdfCanvas.height);
+      this.ctxOverlay.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+      this.dispatchEvent(new CustomEvent("marks-updated", { detail: [] }));
+    }
+  }
+});
+
+
 
       // Configura PDF.js
       pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -114,36 +155,87 @@ if (typeof window !== 'undefined') {
       });
     }
 
-    // Métodos públicos
+    
 
+    // Métodos públicos
     public openPDF(): void {
       console.log("Ejecutando openPDF...");
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'application/pdf';
+      input.multiple = true; // Permitir selección múltiple
       input.onchange = () => {
-        const file = input.files ? input.files[0] : null;
-        if (file) {
-          const fileReader = new FileReader();
-          fileReader.onload = () => {
-            const typedarray = new Uint8Array(fileReader.result as ArrayBuffer);
-            pdfjsLib.getDocument(typedarray).promise.then((pdf: any) => {
-              this.pdfDoc = pdf;
-              this.currentPage = 1;
-              this.scale = 1.0; // Zoom se resetea
-              this.marcas = [];
-              this.selectedMarkIndex = null;
-              this.renderPage(this.currentPage);
-            }).catch((error: any) => {
-              console.error("Error al cargar PDF:", error);
-              alert("Error al cargar el PDF. Revisa la consola.");
-            });
-          };
-          fileReader.readAsArrayBuffer(file);
+        const files = input.files;
+        if (files && files.length > 0) {
+          // Reinicia la lista de PDFs si se desea, o si quieres agregar nuevos, omite esta línea:
+          this.loadedPDFs = [];
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileReader = new FileReader();
+            fileReader.onload = () => {
+              const typedarray = new Uint8Array(fileReader.result as ArrayBuffer);
+              pdfjsLib.getDocument(typedarray).promise.then((pdf: any) => {
+                // Genera una previsualización del primer página como thumbnail
+                pdf.getPage(1).then((page: any) => {
+                  const thumbScale = 0.2;  // Escala pequeña para la previsualización
+                  const viewport = page.getViewport({ scale: thumbScale });
+                  const canvasThumb = document.createElement('canvas');
+                  canvasThumb.width = viewport.width;
+                  canvasThumb.height = viewport.height;
+                  const ctxThumb = canvasThumb.getContext('2d');
+                  const renderContext = {
+                    canvasContext: ctxThumb,
+                    viewport: viewport,
+                  };
+                  page.render(renderContext).promise.then(() => {
+                    const thumbnail = canvasThumb.toDataURL("image/png");
+                    // Agrega el PDF cargado a la lista con su nombre y thumbnail
+                    this.loadedPDFs.push({
+                      name: file.name,
+                      pdfDoc: pdf,
+                      thumbnail: thumbnail,
+                      marks: [],
+                    });
+                    // Despacha el evento para actualizar el sidebar
+                    this.dispatchEvent(new CustomEvent("pdfs-updated", {
+                      detail: this.loadedPDFs
+                    }));
+                    // Si es el primer PDF cargado, muéstralo automáticamente
+                    if (this.loadedPDFs.length === 1) {
+                      this.currentPage = 1;
+                      this.pdfDoc = pdf;
+                      this.scale = 1.0; // Zoom por defecto para visualización
+                      this.renderPage(this.currentPage);
+                    }
+                  });
+                });
+              }).catch((error: any) => {
+                console.error("Error al cargar PDF:", error);
+                alert("Error al cargar el PDF. Revisa la consola.");
+              });
+            };
+            fileReader.readAsArrayBuffer(file);
+          }
         }
       };
       input.click();
     }
+    
+    
+    public showPDF(index: number): void {
+      if (this.loadedPDFs[index]) {
+        const selected = this.loadedPDFs[index];
+        this.pdfDoc = selected.pdfDoc;
+        this.currentPage = 1;
+        this.scale = 1.0;
+        // Carga las marcas almacenadas para ese PDF, o un arreglo vacío si no existen
+        this.marcas = selected.marks || [];
+        this.renderPage(this.currentPage);
+        // Despacha el evento para actualizar la lista de marcas
+        this.dispatchEvent(new CustomEvent("marks-updated", { detail: this.marcas }));
+      }
+    }
+    
 
     public zoomIn(): void {
       this.scale *= 1.1;
@@ -307,7 +399,6 @@ if (typeof window !== 'undefined') {
         this.ctxOverlay.restore();
       }
     }
-
     finishMarking(e: MouseEvent): void {
       if (this.isMarcando && this.currentMarca) {
         const rect = this.overlayCanvas.getBoundingClientRect();
@@ -319,13 +410,20 @@ if (typeof window !== 'undefined') {
         const height = Math.abs(endY - this.currentMarca.startY) / this.scale;
         const colors = ["red", "blue", "green", "orange", "purple", "brown"];
         const color = colors[this.marcas.length % colors.length];
-        this.marcas.push({ x, y, width, height, color });
+        const newMark: Marca = { x, y, width, height, color };
+        this.marcas.push(newMark);
+        // Actualiza las marcas en el PDF actual
+        if (this.loadedPDFs.length > 0) {
+          // Se asume que el PDF mostrado es el primero, o bien, implementa lógica para buscar el índice actual
+          this.loadedPDFs[0].marks = this.marcas;
+        }
         this.isMarcando = false;
         this.currentMarca = null;
         this.overlayCanvas.style.cursor = 'default';
         this.dibujarMarcasFijas();
       }
     }
+    
 
     // Funciones para panning
     startPanning(e: MouseEvent): void {
