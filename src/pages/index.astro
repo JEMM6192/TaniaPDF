@@ -6,9 +6,10 @@ import "../styles/global.css";
 ---
 
 <Layout>
-  <!-- Contenedor para el visor: le damos un ancho fijo pero que se mantenga centrado -->
+  <!-- Contenedor que abarca todo el ancho disponible en el layout,
+       limitado a un ancho máximo y con una altura fija para que el visor tenga scroll interno. -->
   <div class="flex justify-center">
-    <div class="flex-shrink-0">
+    <div class="w-full max-w-5xl h-[800px] overflow-auto">
       <ClientPDFViewer client:load />
     </div>
   </div>
