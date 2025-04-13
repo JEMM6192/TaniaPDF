@@ -19,25 +19,25 @@ import "../styles/global.css";
       src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
       defer></script>
   </head>
-  <!-- Usa h-screen para que el body tenga una altura fija -->
+  <!-- Usa h-screen para que el body tenga una altura fija; se evita scroll horizontal global -->
   <body class="h-screen overflow-x-hidden">
     <!-- Navbar en la parte superior -->
     <Navbar />
 
     <!-- Contenedor principal: Sidebar izquierdo, área central y sidebar derecho -->
-    <div class="flex h-full w-full gap-x-4">
+    <div class="flex flex-col sm:flex-row h-full w-full gap-x-4">
       <!-- Sidebar izquierdo: ancho fijo -->
-      <div class="w-48 flex-shrink-0">
+      <div class="w-48 flex-shrink-0 bg-base-200">
         <Sidebar />
       </div>
 
       <!-- Área central: visor PDF con scroll vertical independiente -->
-      <main class="flex-1">
+      <main class="flex-1 overflow-y-auto p-4">
         <slot />
       </main>
 
-      <!-- Sidebar derecho: panel de control, ancho fijo -->
-      <div class="w-64 flex-shrink-0">
+      <!-- Sidebar derecho: panel de control, ancho fijo; se reduce a w-56 -->
+      <div class="w-56 bg-base-200">
         <ControlPanel />
       </div>
     </div>

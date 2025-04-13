@@ -1,4 +1,7 @@
-<!-- src/components/Navbar.astro -->
+---
+import logo from "../assets/logo2.webp";
+---
+
 <nav
   class="navbar bg-base-100 p-4 sm:border-b border-base-content/25 sm:z-10 relative"
 >
@@ -12,24 +15,7 @@
   >
     <span class="icon-[tabler--menu-2] size-5"></span>
   </button>
-  <div class="flex-1 flex items-center">
-    <a
-      class="link text-base-content text-xl font-semibold no-underline"
-      href="#"
-    >
-      FlyonUI
-    </a>
-  </div>
-  <!-- Aquí puedes agregar otros elementos o dropdowns -->
-  <div class="navbar-end flex items-center gap-4">
-    <!-- Ejemplo: Avatar -->
-    <div class="avatar">
-      <div class="size-9.5 rounded-full">
-        <img
-          src="https://cdn.flyonui.com/fy-assets/avatar/avatar-1.png"
-          alt="avatar 1"
-        />
-      </div>
-    </div>
+  <div class="flex-1 flex justify-center items-center">
+    <img src={logo.src} alt="Logo" class="h-12 w-auto" />
   </div>
 </nav>

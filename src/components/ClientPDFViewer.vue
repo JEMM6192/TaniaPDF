@@ -4,7 +4,7 @@
     <!-- Contenedor del visor: permite scroll horizontal y vertical -->
     <div
       id="viewerContainer"
-      class="w-full h-full border border-base-200 rounded-lg bg-base-100 overflow-x-auto overflow-y-auto cursor-grab"
+      class="w-full h-full border border-base-200 rounded-lg bg-base-100  cursor-grab"
     >
       <div class="relative">
         <canvas id="pdfCanvas" class="block"></canvas>
